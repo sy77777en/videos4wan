@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery - videos4wan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .stats {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .video-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .video-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-item video {
+            width: 100%;
+            border-radius: 8px;
+            background: #000;
+            max-height: 400px;
+        }
+
+        .video-name {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #555;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #764ba2;
+            font-weight: bold;
+        }
+
+        .page-info {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Video Gallery</h1>
+        <div class="subtitle">From Hugging Face Dataset: syCen/videos4wan</div>
+        <div class="stats" id="stats">Loading video list...</div>
+        
+        <div class="video-grid" id="videoGrid">
+            <div class="loading">Loading videos...</div>
+        </div>
+        
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script>
+        // Array of all video filenames
+        const videos = [
+            "0KzYf7tCh4QqhKjmEA8I.mp4", "0qn52CVDfo4mA3RKqBOo.mp4", "0qqUuzTdg67LkZBiaRNT.mp4",
+            "0wXAxLOgloh3FL4sCZeQ.mp4", "11mn4qelEBgvskGGGcGh.mp4", "1Dn3mXjnGXqTNdHhUynF.mp4",
+            "1H11M6v0eSF469ByXeqa.mp4", "2PduIHSSiKUkgTmdRcMQ.mp4", "2RwYix6I52Dt9hyLMoIK.mp4",
+            "2m0rKzTjVcGdfjIRvHeA.mp4", "2yz2qjf6IwM8QDu3iopN.mp4", "3H4SeDoYsuRmIafrAaf1.mp4",
+            "3eMUpDMOxTuxnPIHWdv7.mp4", "3w9g6zXd8rgf8IirHiko.mp4", "42xpeycW6b03RY5qPDN1.mp4",
+            "46Qt5D8By7Lji3l4CWog.mp4", "47LMlC4QCOh0DoUR3FgE.mp4", "4M3Y1aSR5KUlzS4GmKOo.mp4",
+            "4o9GztG8nOJFAuiW3Ri0.mp4", "4xQTbRd0O2w5Fb3gO9Kz.mp4", "5O4xe0n1YOahHyHxeY7P.mp4",
+            "5hqbhGJEpS3kJ4kzxLd6.mp4", "5lnu52H5aP4OOoFLmPE1.mp4", "6Oj3QFGVyQ6sbDzL8D3f.mp4",
+            "6aL1vvETmGPmTuXkLKAE.mp4", "6c0Ke2a6RKxojZczWcUC.mp4", "6slqwAFUEukK974wHB21.mp4",
+            "6w4OHvEzwYiSVlqxDtH7.mp4", "73ZfWkhwjZalzidRFnVp.mp4", "7dmHzTGCdXymHFuyLjQb.mp4",
+            "7s4EPwu0fTVz3e6uXCiT.mp4", "8Cl1AhJD4P7s988R4ZEE.mp4", "8Pe5wILzjwKFaDdrATRu.mp4",
+            "8aMhIEpbtkUaR43m1OxA.mp4", "8k4ud1jAcrwdeEZM3mF5.mp4", "8kQoMWc3FxNQbTX1FiWl.mp4",
+            "8kv5Ax2XNF7aZ88pgWWg.mp4", "8o0nxbvqY0lF0oPkuNoO.mp4", "9Nx7upNc2OhpfkgjUiVa.mp4",
+            "9W6cksqwRvgIsDEsKwxB.mp4", "9xPGk92gA8Cjm2JjFX5V.mp4", "A19uB1ofqesQqLzW9PbZ.mp4",
+            "A4tFwaDg80CblTIyDgcM.mp4", "ASMGyKxACdacsZC9c1GO.mp4", "AWLOAQ0y47cuBYHSaHvV.mp4",
+            "B8QzSnBVkJptJNYUqg0m.mp4", "BSlF2KW85qfRIG3Gjwhz.mp4", "BuXk8Ir8RSH6VvHMJkmo.mp4",
+            "C8Ew2IfJ7x4v00yuBxPU.mp4"
+        ];
+
+        const baseURL = "https://huggingface.co/datasets/syCen/videos4wan/resolve/main/";
+        const videosPerPage = 20;
+        let currentPage = 1;
+
+        // Calculate total number of pages
+        const totalPages = Math.ceil(videos.length / videosPerPage);
+
+        // Update statistics information
+        document.getElementById('stats').textContent = 
+            `Total ${videos.length} videos | ${videosPerPage} per page | ${totalPages} pages`;
+
+        // Render video grid
+        function renderVideos(page) {
+            const startIndex = (page - 1) * videosPerPage;
+            const endIndex = startIndex + videosPerPage;
+            const pageVideos = videos.slice(startIndex, endIndex);
+
+            const videoGrid = document.getElementById('videoGrid');
+            videoGrid.innerHTML = '';
+
+            pageVideos.forEach(videoName => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                
+                const videoElement = document.createElement('video');
+                videoElement.controls = true;
+                videoElement.preload = 'metadata';
+                videoElement.src = baseURL + videoName;
+                
+                const videoNameDiv = document.createElement('div');
+                videoNameDiv.className = 'video-name';
+                videoNameDiv.textContent = videoName;
+                
+                videoItem.appendChild(videoElement);
+                videoItem.appendChild(videoNameDiv);
+                videoGrid.appendChild(videoItem);
+            });
+
+            currentPage = page;
+            renderPagination();
+        }
+
+        // Render pagination buttons
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '« Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => renderVideos(currentPage - 1);
+            pagination.appendChild(prevBtn);
+
+            // Page number buttons
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            if (startPage > 1) {
+                const firstBtn = document.createElement('button');
+                firstBtn.textContent = '1';
+                firstBtn.onclick = () => renderVideos(1);
+                pagination.appendChild(firstBtn);
+
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.style.padding = '10px';
+                    pagination.appendChild(dots);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = i === currentPage ? 'active' : '';
+                pageBtn.onclick = () => renderVideos(i);
+                pagination.appendChild(pageBtn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.style.padding = '10px';
+                    pagination.appendChild(dots);
+                }
+
+                const lastBtn = document.createElement('button');
+                lastBtn.textContent = totalPages;
+                lastBtn.onclick = () => renderVideos(totalPages);
+                pagination.appendChild(lastBtn);
+            }
+
+            // Page information
+            const pageInfo = document.createElement('div');
+            pageInfo.className = 'page-info';
+            pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+            pagination.appendChild(pageInfo);
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next »';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => renderVideos(currentPage + 1);
+            pagination.appendChild(nextBtn);
+        }
+
+        // Initialize: load first page
+        renderVideos(1);
+    </script>
+</body>
+</html>
